@@ -8,14 +8,11 @@ built with HTML + CSS + JavaScript + Supabase.
 Project Structure
 
 keep-it-organized/
-│
-├── index.html              ← Main page (HTML)
-├── css/
-│   └── styles.css          ← All styles (CSS)
-├── js/
-│   └── app.js              ← All logic (JavaScript)
-├── supabase-setup.sql      ← Database setup script
-└── README.md               ← This file
+index.html (Main page (HTML))
+css/styles.css (All styles (CSS))
+js/app.js (All logic (JavaScript))
+supabase-setup.sql (Database setup script)
+README.md (This file)
 
 ----------------------------------------------------------------
 
@@ -104,17 +101,7 @@ How the code works
 
 Authentication flow
 
-User opens app
-     ↓
-Supabase checks for saved session (cookie/localStorage)
-     ↓
-Session found?  →  Load user data  →  Show app
-     ↓ No
-Show login form
-     ↓
-User submits form  →  Supabase validates  →  Returns session
-     ↓
-Load user data  →  Show app
+User opens app >> Supabase checks for saved session (cookie/localStorage) >> Session found? > Load user data > Show app >> Show login form >> User submits form > Supabase validates > Returns session >> Load user data > Show app
 
 Data security (Row Level Security)
 
