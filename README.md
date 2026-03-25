@@ -7,11 +7,11 @@ built with HTML + CSS + JavaScript + Supabase.
 
 Project Structure
 
-keep-it-organized/
-index.html (Main page (HTML))
-css/styles.css (All styles (CSS))
-js/app.js (All logic (JavaScript))
-supabase-setup.sql (Database setup script)
+keep-it-organized/___
+index.html___
+css/styles.css___
+js/app.js___
+supabase-setup.sql___
 README.md (This file)
 
 ----------------------------------------------------------------
