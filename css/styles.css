@@ -1,23 +1,25 @@
-/* CSS variables */
+/* ==================== CSS VARIABLES ==================== */
+/* Define all reusable colors, spacing, shadows, and transitions */
 :root {
-  --sb-bg: #0f1117;
-  --sb-border: rgba(255,255,255,0.07);
-  --sb-text: #94a3b8;
-  --sb-hover: rgba(255,255,255,0.05);
-  --sb-w: 256px;
+  --sb-bg: #0f1117;               /* Sidebar background color */
+  --sb-border: rgba(255,255,255,0.07); /* Subtle border for sidebar elements */
+  --sb-text: #94a3b8;             /* Default text color in sidebar */
+  --sb-hover: rgba(255,255,255,0.05); /* Hover background for sidebar items */
+  --sb-w: 256px;                  /* Fixed width of sidebar */
 
-  --bg: #f8f9fb;
-  --card: #ffffff;
-  --border: #e8edf2;
-  --border2: #d1d9e0;
-  --ink: #0f172a;
-  --ink2: #475569;
-  --ink3: #94a3b8;
+  --bg: #f8f9fb;                  /* Main app background */
+  --card: #ffffff;                /* Card background (notes, modals) */
+  --border: #e8edf2;              /* Light border for most elements */
+  --border2: #d1d9e0;             /* Darker border for hover states */
+  --ink: #0f172a;                 /* Primary text color (dark) */
+  --ink2: #475569;                /* Secondary text color */
+  --ink3: #94a3b8;                /* Tertiary text color (light gray) */
 
-  --primary: #7c3aed;
-  --danger: #dc2626;
-  --danger-light: #fee2e2;
+  --primary: #7c3aed;             /* Primary accent color (purple) */
+  --danger: #dc2626;              /* Danger/delete color */
+  --danger-light: #fee2e2;        /* Light background for danger actions */
 
+  /* Category color palettes (background, text, icon) */
   --p-blue-bg:   #dbeafe; --p-blue-text:   #1e40af; --p-blue-ico:   #3b82f6;
   --p-green-bg:  #d1fae5; --p-green-text:  #065f46; --p-green-ico:  #10b981;
   --p-purple-bg: #ede9fe; --p-purple-text: #5b21b6; --p-purple-ico: #8b5cf6;
@@ -27,19 +29,22 @@
   --p-red-bg:    #fee2e2; --p-red-text:    #991b1b; --p-red-ico:    #ef4444;
   --p-teal-bg:   #ccfbf1; --p-teal-text:   #134e4a; --p-teal-ico:   #14b8a6;
 
+  /* Deadline badge colors */
   --timer-safe-bg:   #d1fae5; --timer-safe-text:   #065f46;
   --timer-warn-bg:   #fef9c3; --timer-warn-text:   #92400e;
   --timer-danger-bg: #fee2e2; --timer-danger-text: #991b1b;
 
-  --r: 12px;
-  --r2: 16px;
+  /* Sizing and shadows */
+  --r: 12px;                     /* Small border radius */
+  --r2: 16px;                    /* Larger border radius */
   --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.06);
   --shadow-card-hover: 0 4px 12px rgba(0,0,0,0.1), 0 12px 28px rgba(0,0,0,0.08);
   --shadow-modal: 0 20px 60px rgba(0,0,0,0.2), 0 4px 16px rgba(0,0,0,0.1);
-  --tr: 0.18s cubic-bezier(.4,0,.2,1);
+  --tr: 0.18s cubic-bezier(.4,0,.2,1); /* Standard transition */
 }
 
-/* Reset and base */
+/* ==================== RESET & BASE ==================== */
+/* Remove default margins/paddings and set consistent box-sizing */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 button, input, textarea, select { font-family: inherit; font-size: inherit; }
 button { cursor: pointer; }
@@ -49,14 +54,15 @@ body {
   background: var(--bg);
   color: var(--ink);
   height: 100vh;
-  overflow: hidden;
+  overflow: hidden;          /* Prevent body scrolling; inner areas scroll */
   display: flex;
   flex-direction: column;
   font-size: 14px;
   line-height: 1.5;
 }
 
-/* Loading page */
+/* ==================== LOADING SCREEN ==================== */
+/* Full‑screen overlay shown while checking authentication or loading data */
 #loading-page {
   position: fixed;
   inset: 0;
@@ -91,7 +97,8 @@ body {
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* Auth page */
+/* ==================== AUTHENTICATION PAGE ==================== */
+/* Login, sign up, password reset screens */
 #auth-page {
   flex: 1;
   display: flex;
@@ -201,9 +208,11 @@ body {
 .auth-toggle { text-align: center; margin-top: 12px; font-size: 13px; color: var(--ink3); }
 .auth-toggle a { color: var(--primary); font-weight: 700; cursor: pointer; }
 
-/* Sidebar */
+/* ==================== MAIN APP LAYOUT ==================== */
+/* Sidebar + main content */
 #app-page { flex: 1; display: flex; height: 100vh; overflow: hidden; }
 
+/* SIDEBAR STYLES */
 #sidebar {
   width: var(--sb-w);
   min-width: var(--sb-w);
@@ -212,10 +221,11 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  user-select: none;
+  user-select: none;      /* Prevents accidental text selection */
   overflow: hidden;
 }
 
+/* Branding / logo area */
 .sb-brand { padding: 18px 16px 14px; border-bottom: 1px solid var(--sb-border); flex-shrink: 0; }
 .sb-brand-inner { display: flex; align-items: center; gap: 10px; }
 .sb-brand-icon {
@@ -226,6 +236,7 @@ body {
 .sb-brand-icon svg { color: #a78bfa; }
 .sb-brand-name { font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 800; color: #f1f5f9; line-height: 1.25; }
 
+/* Navigation buttons and folders list */
 .sb-nav { flex: 1; overflow-y: auto; padding: 10px 10px 0; }
 .sb-nav::-webkit-scrollbar { width: 3px; }
 .sb-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,.08); border-radius: 3px; }
@@ -244,6 +255,7 @@ body {
 .nav-btn .cnt { margin-left: auto; font-size: 11.5px; padding: 1px 7px; border-radius: 20px; background: rgba(255,255,255,.12); font-weight: 700; }
 .nav-btn.active .cnt { background: rgba(255,255,255,.22); }
 
+/* Folders section header (collapsible) */
 .sb-section-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 10px 10px 4px; font-size: 11px; font-weight: 700;
@@ -254,6 +266,7 @@ body {
 .sb-section-header .ch { transition: transform var(--tr); }
 .sb-section-header.collapsed .ch { transform: rotate(-90deg); }
 
+/* Dynamic folder list */
 .folders-list { display: flex; flex-direction: column; gap: 1px; }
 .folders-list.hidden { display: none; }
 
@@ -317,9 +330,10 @@ body {
   white-space: nowrap;
 }
 
-/* Main area and header */
+/* ==================== MAIN CONTENT AREA ==================== */
 #main-area { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
 
+/* Header with title and action buttons */
 #main-header {
   background: rgba(248,249,251,.92);
   backdrop-filter: blur(10px);
@@ -333,6 +347,7 @@ body {
 .header-count { font-size: 13px; color: var(--ink3); margin-top: 1px; }
 .header-right { display: flex; align-items: center; gap: 8px; }
 
+/* General button styles (used in header and modals) */
 .btn {
   padding: 8px 16px; border-radius: var(--r); border: none;
   font-weight: 700; font-size: 13px; transition: all var(--tr);
@@ -350,13 +365,16 @@ body {
 .btn-icon { background: none; border: none; padding: 7px; border-radius: var(--r); color: var(--ink3); transition: all var(--tr); display: flex; align-items: center; }
 .btn-icon:hover { background: #f1f5f9; color: var(--ink2); }
 
+/* Scrollable content area where notes are displayed */
 #content-area { flex: 1; overflow-y: auto; padding: 24px; }
 #content-area::-webkit-scrollbar { width: 5px; }
 #content-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
 
-/* Notes grid and categories */
+/* ==================== NOTES GRID & CATEGORIES ==================== */
+/* Responsive grid for notes */
 .notes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
 
+/* Category section (grouped notes) */
 .cat-section { margin-bottom: 28px; border-top: 3px solid transparent; border-bottom: 3px solid transparent; transition: border-color .15s; }
 .cat-section.drag-above { border-top-color: var(--primary); }
 .cat-section.drag-below { border-bottom-color: var(--primary); }
@@ -369,7 +387,7 @@ body {
 .cat-count { font-size: 13px; color: var(--ink3); }
 .cat-line { height: 1px; flex: 1; background: var(--border); }
 
-/* Note cards */
+/* Individual note card */
 .note-card {
   background: var(--card); border-radius: var(--r2); padding: 15px;
   box-shadow: var(--shadow-card); border: 1px solid var(--border);
@@ -390,19 +408,23 @@ body {
 .folder-tag { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 20px; font-size: 11px; background: #f1f5f9; color: var(--ink2); font-weight: 600; }
 .nc-trash-date { font-size: 11.5px; color: var(--ink3); margin-bottom: 10px; }
 
+/* Three‑dot menu button on note cards */
 .nc-menu-btn { position: absolute; top: 12px; right: 12px; background: none; border: none; padding: 4px; border-radius: 7px; color: var(--ink3); opacity: 0; transition: all var(--tr); display: flex; align-items: center; }
 .note-card:hover .nc-menu-btn { opacity: 1; }
 .nc-menu-btn:hover { background: #f1f5f9; color: var(--ink2); }
 
+/* Empty state placeholder (no notes) */
 .empty-state { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 64px 24px; }
 .empty-icon-wrap { width: 80px; height: 80px; border-radius: 24px; background: var(--p-purple-bg); display: flex; align-items: center; justify-content: center; margin-bottom: 20px; font-size: 36px; }
 .empty-title { font-family: 'Nunito', sans-serif; font-size: 22px; font-weight: 800; color: var(--ink); margin-bottom: 8px; }
 .empty-body { font-size: 14px; color: var(--ink3); max-width: 340px; line-height: 1.65; }
 
-/* Modals and forms */
+/* ==================== MODALS ==================== */
+/* Overlay background for modals */
 .overlay { position: fixed; inset: 0; background: rgba(10,12,20,.55); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity .2s; padding: 16px; }
 .overlay.open { opacity: 1; pointer-events: all; }
 
+/* Modal content box */
 .modal { background: #fff; border-radius: var(--r2); width: 100%; max-width: 460px; max-height: 88vh; display: flex; flex-direction: column; box-shadow: var(--shadow-modal); transform: scale(.96) translateY(10px); transition: transform .22s cubic-bezier(.34,1.56,.64,1); overflow: hidden; }
 .overlay.open .modal { transform: scale(1) translateY(0); }
 .modal.sm { max-width: 380px; }
@@ -416,6 +438,7 @@ body {
 .modal-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 .modal-foot { padding: 14px 22px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0; }
 
+/* Form elements inside modals */
 .fg { margin-bottom: 16px; }
 .fl { display: block; font-size: 13px; font-weight: 700; color: var(--ink2); margin-bottom: 6px; }
 .fl span { font-weight: 400; color: var(--ink3); }
@@ -426,6 +449,7 @@ body {
 .ft { resize: vertical; min-height: 100px; line-height: 1.6; }
 .fs { appearance: none; cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
 
+/* Color picker grids */
 .color-grid { display: flex; gap: 8px; flex-wrap: wrap; }
 .color-swatch { width: 26px; height: 26px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: all var(--tr); }
 .color-swatch:hover { transform: scale(1.15); }
@@ -436,6 +460,7 @@ body {
 .folder-color-swatch:hover { transform: scale(1.04); }
 .folder-color-swatch.sel { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(124,58,237,.25); }
 
+/* Category list items inside manage categories modal */
 .cat-item { display: flex; align-items: center; gap: 9px; padding: 9px 12px; border-radius: var(--r); border: 1px solid var(--border); background: #fafaf8; margin-bottom: 7px; }
 .cat-item-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
 .cat-item-name { flex: 1; font-size: 13.5px; font-weight: 700; color: var(--ink); }
@@ -452,11 +477,13 @@ body {
 .add-cat-input-row { display: flex; gap: 8px; margin-bottom: 10px; }
 .add-cat-input-row .fi { flex: 1; }
 
+/* Date input with clear button */
 .date-wrap { position: relative; }
 .date-clear { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--ink3); cursor: pointer; padding: 2px; border-radius: 4px; display: flex; align-items: center; }
 .date-clear:hover { color: var(--danger); }
 
-/* Dropdown menus */
+/* ==================== DROPDOWN MENUS ==================== */
+/* Context menus (right‑click style) */
 .dd { position: fixed; background: #fff; border-radius: var(--r); padding: 4px; box-shadow: 0 4px 24px rgba(0,0,0,.14), 0 1px 4px rgba(0,0,0,.06); border: 1px solid var(--border); z-index: 2000; min-width: 175px; display: none; }
 .dd.open { display: block; }
 .dd-item { display: flex; align-items: center; gap: 9px; padding: 8px 11px; border-radius: 8px; font-size: 13px; color: var(--ink); cursor: pointer; border: none; background: none; width: 100%; text-align: left; transition: background var(--tr); font-weight: 500; }
@@ -469,11 +496,13 @@ body {
 .dd-submenu { position: absolute; left: 100%; top: -4px; background: #fff; border-radius: var(--r); padding: 4px; box-shadow: 0 4px 24px rgba(0,0,0,.14); border: 1px solid var(--border); min-width: 150px; display: none; z-index: 2001; }
 .dd-sub:hover .dd-submenu { display: block; }
 
-/* Toast */
+/* ==================== TOAST NOTIFICATION ==================== */
+/* Floating temporary message */
 #toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(14px); background: var(--ink); color: #fff; padding: 9px 18px; border-radius: var(--r); font-size: 13.5px; font-weight: 600; opacity: 0; pointer-events: none; transition: all .22s ease; z-index: 3000; white-space: nowrap; box-shadow: 0 8px 24px rgba(0,0,0,.2); display: flex; align-items: center; gap: 8px; }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-/* Animations */
+/* ==================== ANIMATIONS ==================== */
+/* Subtle pop‑in effect for note cards */
 @keyframes popIn {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }

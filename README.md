@@ -14,7 +14,7 @@ keep-it-organized/
 ├── css/
 │   └── styles.css          ← All visual styles
 ├── js/
-│   └── app.js              ← All logic (⚠️ edit this file first!)
+│   └── app.js              ← All logic (edit this file first with your own database keys if you want to use the app.)
 ├── supabase-setup.sql      ← Database setup script
 └── README.md               ← This file
 ```

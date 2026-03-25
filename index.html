@@ -5,18 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Keep it Organized</title>
 
-  <!-- Google Fonts -->
+  <!-- Google Fonts – modern, clean typography -->
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Nunito+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 
-  <!-- Supabase SDK (login + database) -->
+  <!-- Supabase SDK – provides authentication and database client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <!-- Our stylesheet -->
+  <!-- Custom stylesheet (CSS) -->
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 
-  <!-- Loading screen (shown while checking login) -->
+  <!-- ==================== LOADING SCREEN ==================== -->
+  <!-- Shown while checking login status or performing async operations -->
   <div id="loading-page">
     <div class="loading-box">
       <div class="loading-spinner"></div>
@@ -25,10 +26,12 @@
   </div>
 
 
-  <!-- Auth page (login / sign up) -->
+  <!-- ==================== AUTHENTICATION PAGE ==================== -->
+  <!-- Handles sign in, sign up, password reset, and new password setup -->
   <div id="auth-page" style="display:none">
     <div class="auth-box">
 
+      <!-- Logo and greeting -->
       <div class="auth-logo">
         <div class="auth-logo-icon">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -42,6 +45,7 @@
         <div class="auth-sub" id="auth-sub">Welcome back!</div>
       </div>
 
+      <!-- Main form: sign in / sign up (dynamic based on authMode) -->
       <div class="auth-form" id="auth-form-main">
         <div class="auth-field">
           <label for="a-email">Email</label>
@@ -64,6 +68,7 @@
             <input type="password" id="a-pw" placeholder="••••••••" autocomplete="current-password"/>
           </div>
         </div>
+        <!-- Forgot password link (visible only in sign-in mode) -->
         <button type="button" id="forgot-btn" onclick="showForgotPassword()"
           style="background:none;border:none;color:var(--primary);font-size:13px;font-weight:700;
                  cursor:pointer;text-align:right;align-self:flex-end;padding:0;margin-top:-8px">
@@ -71,16 +76,17 @@
         </button>
         <button class="btn-primary-auth" id="a-btn" onclick="doAuth()">Sign In</button>
 
-        <!-- Error message from Supabase -->
+        <!-- Error message area for auth errors -->
         <div id="auth-error" class="auth-error" style="display:none"></div>
       </div>
 
+      <!-- Toggle between sign in and sign up -->
       <div class="auth-toggle" id="auth-toggle-row">
         <span id="a-tog-txt">Don't have an account?</span>
         <a id="a-tog-lnk" onclick="toggleAuth()"> Sign Up</a>
       </div>
 
-      <!-- Forgot password screen -->
+      <!-- Forgot password screen: asks for email to send reset link -->
       <div id="reset-screen" style="display:none">
         <div class="auth-form">
           <div class="auth-field">
@@ -98,7 +104,7 @@
         </div>
       </div>
 
-      <!-- New password screen (after clicking email link) -->
+      <!-- New password screen (shown after clicking email reset link) -->
       <div id="new-password-screen" style="display:none">
         <div class="auth-logo">
           <div class="auth-title">Set new password</div>
@@ -121,10 +127,11 @@
   </div>
 
 
-  <!-- Main app (shown when logged in) -->
+  <!-- ==================== MAIN APP ==================== -->
+  <!-- Visible only when user is authenticated -->
   <div id="app-page" style="display:none">
 
-    <!-- Sidebar -->
+    <!-- Sidebar: navigation, folders, categories, user info -->
     <aside id="sidebar">
       <div class="sb-brand">
         <div class="sb-brand-inner">
@@ -141,6 +148,7 @@
       </div>
 
       <nav class="sb-nav">
+        <!-- All notes (default view) -->
         <button class="nav-btn active" id="nav-all" onclick="setView(null)">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
@@ -150,6 +158,7 @@
           <span class="cnt" id="cnt-all">0</span>
         </button>
 
+        <!-- Opens categories management modal -->
         <button class="nav-btn" onclick="openOv('ov-cats'); renderCatsList(); buildColorPicker('ncp', 'blue', c => newCatColor = c)">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
@@ -159,14 +168,17 @@
           <span class="cnt" id="cnt-cats">0</span>
         </button>
 
+        <!-- Folders header (collapsible) -->
         <div class="sb-section-header" id="fol-hd" onclick="toggleFoldersList()">
           <span>Folders</span>
           <svg class="ch" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="6 9 12 15 18 9"/>
           </svg>
         </div>
+        <!-- Dynamic list of folders will be injected here -->
         <div class="folders-list" id="fol-list"></div>
 
+        <!-- Button to create a new folder -->
         <button class="btn-new-folder" onclick="openNewFolderModal()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <line x1="12" y1="5" x2="12" y2="19"/>
@@ -177,6 +189,7 @@
 
         <div class="sb-sep"></div>
 
+        <!-- Trash view with dropzone for dragging notes -->
         <button class="nav-btn" id="nav-trash" onclick="setView('__trash__')"
           ondragover="event.preventDefault(); this.classList.add('drop-over')"
           ondragleave="this.classList.remove('drop-over')"
@@ -191,14 +204,14 @@
         <div class="trash-hint">Auto-emptied after 30 days</div>
       </nav>
 
-      <!-- User info at bottom of sidebar -->
+      <!-- User info (avatar and email) at bottom of sidebar -->
       <div class="sb-user">
         <div class="sb-user-avatar" id="sb-avatar">?</div>
         <span class="sb-user-email" id="sb-email">user@email.com</span>
       </div>
     </aside>
 
-    <!-- Main content area -->
+    <!-- Main content area (header + notes grid) -->
     <div id="main-area">
       <header id="main-header">
         <div>
@@ -206,6 +219,7 @@
           <div class="header-count" id="h-count">0 notes</div>
         </div>
         <div class="header-right">
+          <!-- Empty Trash button (visible only when in trash view) -->
           <button class="btn btn-dest" id="btn-empty" style="display:none" onclick="confirmEmptyTrash()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="3 6 5 6 21 6"/>
@@ -213,6 +227,7 @@
             </svg>
             Empty Trash
           </button>
+          <!-- New Note button -->
           <button class="btn btn-acc" id="btn-newnote" onclick="openNewNoteModal()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <line x1="12" y1="5" x2="12" y2="19"/>
@@ -220,6 +235,7 @@
             </svg>
             New Note
           </button>
+          <!-- Sign out button -->
           <button class="btn-icon" onclick="doSignOut()" title="Sign Out">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -229,14 +245,14 @@
           </button>
         </div>
       </header>
+      <!-- Dynamic notes grid will be injected here -->
       <div id="content-area"></div>
     </div>
   </div>
 
 
-  <!-- Modals -->
-
-  <!-- Manage Categories -->
+  <!-- ==================== MODALS ==================== -->
+  <!-- Modal for managing categories (create, edit, delete) -->
   <div class="overlay" id="ov-cats" onclick="bgClose(event,'ov-cats')">
     <div class="modal">
       <div class="modal-head">
@@ -244,10 +260,13 @@
         <button class="modal-close" onclick="closeOv('ov-cats')">✕</button>
       </div>
       <div class="modal-body">
+        <!-- List of existing categories will be injected here -->
         <div id="cats-list"></div>
+        <!-- Warning if only one category (cannot delete) -->
         <div id="min-cat-note" style="display:none; text-align:center; font-size:12px; color:var(--ink3); margin:6px 0">
           You must have at least one category
         </div>
+        <!-- Form to add a new category -->
         <div class="add-cat-row">
           <div class="add-cat-input-row">
             <input class="fi" id="ncat-name" placeholder="New category name…" onkeydown="if(event.key==='Enter') addCat()"/>
@@ -258,6 +277,7 @@
               </svg>
             </button>
           </div>
+          <!-- Color picker for new category -->
           <div class="color-grid" id="ncp"></div>
         </div>
       </div>
@@ -267,7 +287,7 @@
     </div>
   </div>
 
-  <!-- Create / Edit Folder -->
+  <!-- Modal for creating / editing a folder -->
   <div class="overlay" id="ov-folder" onclick="bgClose(event,'ov-folder')">
     <div class="modal sm">
       <div class="modal-head">
@@ -285,7 +305,7 @@
     </div>
   </div>
 
-  <!-- Create / Edit Note -->
+  <!-- Modal for creating / editing a note -->
   <div class="overlay" id="ov-note" onclick="bgClose(event,'ov-note')">
     <div class="modal">
       <div class="modal-head">
@@ -319,7 +339,7 @@
     </div>
   </div>
 
-  <!-- Confirm dialog -->
+  <!-- Generic confirmation dialog (e.g., delete, empty trash) -->
   <div class="overlay" id="ov-confirm" onclick="bgClose(event,'ov-confirm')">
     <div class="modal sm">
       <div class="modal-head">
@@ -337,8 +357,8 @@
   </div>
 
 
-  <!-- Dropdown menus -->
-
+  <!-- ==================== DROPDOWN MENUS ==================== -->
+  <!-- Context menu for a note (edit, add/remove folders, trash) -->
   <div class="dd" id="dd-note">
     <button class="dd-item" id="ddn-edit">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -367,6 +387,7 @@
     </button>
   </div>
 
+  <!-- Context menu for a note in trash (restore, permanent delete) -->
   <div class="dd" id="dd-trash-note">
     <button class="dd-item" id="ddt-restore">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.26"/></svg>
@@ -379,6 +400,7 @@
     </button>
   </div>
 
+  <!-- Context menu for a folder (edit, delete) -->
   <div class="dd" id="dd-folder">
     <button class="dd-item" id="ddf-edit">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -391,9 +413,10 @@
     </button>
   </div>
 
+  <!-- Toast notification container (floating messages) -->
   <div id="toast"></div>
 
-  <!-- JavaScript (loaded last) -->
+  <!-- Main JavaScript file (must be loaded after DOM) -->
   <script src="js/app.js"></script>
 
 </body>

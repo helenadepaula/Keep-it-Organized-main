@@ -1,17 +1,18 @@
 // app.js
 
-// Supabase setup
+// --- Supabase Setup ---
+// Supabase project URL and anonymous key
 const SUPABASE_URL = 'https://xjxqrsiyabjlkrzzsugg.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqeHFyc2l5YWJqbGtyenpzdWdnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxODkyNjUsImV4cCI6MjA4OTc2NTI2NX0.mix1hdRAaZhqRA1ZTVziwhMdQjqvh1PuINqP_jGgg-k';
 
-// Create the Supabase client (the SDK was loaded via CDN in index.html)
+// Create the Supabase client (the SDK is loaded via CDN in index.html)
 const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Constants
-const TRASH = '__trash__';
+// --- Constants ---
+const TRASH = '__trash__'; // Special identifier for trash view
 
-// Colors for categories and folders
+// Color palette for categories and folders
 const PAL = [
   { k: 'blue',   bg: '#dbeafe', text: '#1e40af', ico: '#3b82f6' },
   { k: 'green',  bg: '#d1fae5', text: '#065f46', ico: '#10b981' },
@@ -23,7 +24,7 @@ const PAL = [
   { k: 'teal',   bg: '#ccfbf1', text: '#134e4a', ico: '#14b8a6' },
 ];
 
-// State: all data is stored here
+// Global state: stores all user data
 let S = {
   user:     null,
   notes:    [],
@@ -33,17 +34,17 @@ let S = {
   view:     null,
 };
 
-// Temporary UI state
+// Temporary UI state (not persisted)
 let foldersOpen     = true;
 let editNoteId      = null;
 let editFolderId    = null;
 let newCatColor     = 'blue';
 let newFolderColor  = 'blue';
 let editFolderColor = 'blue';
-let authMode        = 'signin';
+let authMode        = 'signin';  // 'signin' or 'signup'
 let dragSrcCat      = null;
 
-// Helper functions
+// --- Helper Functions ---
 
 /** Get palette entry by color key */
 function pal(k) { return PAL.find(p => p.k === k) || PAL[0]; }
@@ -71,38 +72,71 @@ function now() { return new Date().toISOString(); }
 function showLoading() { document.getElementById('loading-page').style.display = 'flex'; }
 function hideLoading() { document.getElementById('loading-page').style.display = 'none'; }
 
-// Init: runs when page loads
+// --- Initialization ---
+
+/** Called when the page loads */
 async function init() {
-  showLoading();
+  let isRecoveringPassword = window.location.hash.includes('type=recovery');
 
-  const { data: { session } } = await db.auth.getSession();
+  try {
+    const { data: { session }, error } = await db.auth.getSession();
+    
+    if (error) throw error;
 
-  if (session) {
-    S.user = session.user;
-    await loadData();
-    showApp();
-  } else {
+    // If user is already logged in and not recovering password, load data and show app
+    if (session && !isRecoveringPassword) {
+      S.user = session.user;
+      await loadData();
+      showApp();
+    } else {
+      hideLoading();
+      // Show auth page
+      document.getElementById('auth-page').style.display = 'flex';
+      
+      // If recovering password, show the new password screen directly
+      if (isRecoveringPassword) {
+         setTimeout(() => {
+            document.getElementById('auth-form-main').style.display = 'none';
+            document.getElementById('reset-screen').style.display = 'none';
+            document.getElementById('new-password-screen').style.display = 'block';
+         }, 100);
+      }
+    }
+  } catch (err) {
     hideLoading();
     document.getElementById('auth-page').style.display = 'flex';
+    console.error("Error during initialization:", err);
   }
-
+  
+  // Listen for auth state changes (login, logout, password recovery)
   db.auth.onAuthStateChange(async (event, session) => {
     if (event === 'PASSWORD_RECOVERY') {
+      isRecoveringPassword = true;
       hideLoading();
-      document.getElementById('auth-page').style.display          = 'flex';
-      document.getElementById('auth-form-main').style.display     = 'none';
-      document.getElementById('forgot-btn').style.display         = 'none';
-      document.getElementById('auth-toggle-row').style.display    = 'none';
-      document.getElementById('reset-screen').style.display       = 'none';
-      document.getElementById('new-password-screen').style.display = '';
+      
+      // Hide app, show auth page with new password form
+      document.getElementById('app-page').style.display = 'none';
+      document.getElementById('auth-page').style.display = 'flex';
+      document.getElementById('auth-form-main').style.display = 'none';
+      document.getElementById('reset-screen').style.display = 'none';
+      document.getElementById('auth-toggle-row').style.display = 'none';
+      document.getElementById('forgot-btn').style.display = 'none';
+      document.getElementById('new-password-screen').style.display = 'block';
+      
+      console.log("New password screen activated.");
       return;
     }
 
     if (event === 'SIGNED_IN' && session) {
-      S.user = session.user;
-      await loadData();
-      showApp();
+      // Only proceed to app if not in password recovery flow
+      if (!isRecoveringPassword) {
+        S.user = session.user;
+        await loadData();
+        showApp();
+      }
     } else if (event === 'SIGNED_OUT') {
+      // Reset everything on logout
+      isRecoveringPassword = false;
       S = { user: null, notes: [], folders: [], cats: [], catOrder: [], view: null };
       document.getElementById('app-page').style.display  = 'none';
       document.getElementById('auth-page').style.display = 'flex';
@@ -112,7 +146,9 @@ async function init() {
   });
 }
 
-// Auth functions
+// --- Authentication Functions ---
+
+/** Toggle between sign in and sign up modes */
 function toggleAuth() {
   authMode = authMode === 'signin' ? 'signup' : 'signin';
   document.getElementById('auth-sub').textContent     = authMode === 'signin' ? 'Welcome back!' : 'Create your account';
@@ -123,6 +159,7 @@ function toggleAuth() {
   hideAuthError();
 }
 
+/** Perform sign in or sign up based on current mode */
 async function doAuth() {
   const email    = document.getElementById('a-email').value.trim();
   const password = document.getElementById('a-pw').value;
@@ -144,6 +181,7 @@ async function doAuth() {
     const res = await db.auth.signUp({ email, password });
     error = res.error;
 
+    // If sign up succeeded but email confirmation is required, show message
     if (!error && res.data.user && !res.data.session) {
       btn.disabled  = false;
       btn.textContent = 'Sign Up';
@@ -160,20 +198,25 @@ async function doAuth() {
   }
 }
 
+/** Sign out the current user */
 async function doSignOut() {
   await db.auth.signOut();
+  window.location.reload();
 }
 
+/** Show authentication error message */
 function showAuthError(msg) {
   const el = document.getElementById('auth-error');
   el.textContent = msg;
   el.style.display = '';
 }
 
+/** Hide authentication error message */
 function hideAuthError() {
   document.getElementById('auth-error').style.display = 'none';
 }
 
+/** Switch from auth page to main app */
 function showApp() {
   hideLoading();
   document.getElementById('auth-page').style.display = 'none';
@@ -186,7 +229,9 @@ function showApp() {
   renderAll();
 }
 
-// Forgot password
+// --- Password Reset Flow ---
+
+/** Show forgot password screen */
 function showForgotPassword() {
   document.getElementById('auth-form-main').style.display  = 'none';
   document.getElementById('forgot-btn').style.display      = 'none';
@@ -196,6 +241,7 @@ function showForgotPassword() {
   setTimeout(() => document.getElementById('reset-email').focus(), 100);
 }
 
+/** Hide reset screen and return to login */
 function hideResetScreen() {
   document.getElementById('reset-screen').style.display    = 'none';
   document.getElementById('auth-form-main').style.display  = '';
@@ -203,6 +249,7 @@ function hideResetScreen() {
   document.getElementById('auth-toggle-row').style.display = '';
 }
 
+/** Send password reset email */
 async function sendResetEmail() {
   const email = document.getElementById('reset-email').value.trim();
   const errEl = document.getElementById('reset-error');
@@ -215,7 +262,7 @@ async function sendResetEmail() {
 
   errEl.style.display = 'none';
 
-  const redirectTo = window.location.href;
+  const redirectTo = window.location.href;  // Use current page for recovery
 
   const { error } = await db.auth.resetPasswordForEmail(email, { redirectTo });
 
@@ -223,6 +270,7 @@ async function sendResetEmail() {
     errEl.textContent   = error.message;
     errEl.style.display = '';
   } else {
+    // Show confirmation message
     document.getElementById('reset-screen').innerHTML = `
       <div class="auth-form" style="text-align:center; gap:12px">
         <div style="font-size:36px">📧</div>
@@ -239,30 +287,27 @@ async function sendResetEmail() {
   }
 }
 
+/** Update user password after recovery */
 async function updatePassword() {
-  const pw    = document.getElementById('new-pw').value;
-  const errEl = document.getElementById('newpw-error');
-
-  if (pw.length < 6) {
-    errEl.textContent   = 'Password must be at least 6 characters.';
-    errEl.style.display = '';
+  const newPw = document.getElementById('new-pw').value;
+  if (!newPw || newPw.length < 6) {
+    alert("Please enter a password with at least 6 characters.");
     return;
   }
-
-  errEl.style.display = 'none';
-
-  const { error } = await db.auth.updateUser({ password: pw });
-
+  
+  const { error } = await db.auth.updateUser({ password: newPw });
+  
   if (error) {
-    errEl.textContent   = error.message;
-    errEl.style.display = '';
+    alert(error.message);
   } else {
-    await db.auth.signOut();
-    toast('Password updated! Please sign in with your new password.');
+    alert('Password updated! You can now log in with your new password.');
+    window.location.reload(); 
   }
 }
 
-// Load data from Supabase
+// --- Data Loading ---
+
+/** Fetch all user data from Supabase */
 async function loadData() {
   const userId = S.user.id;
 
@@ -277,6 +322,7 @@ async function loadData() {
   S.folders = foldersRes.data || [];
   S.notes   = notesRes.data   || [];
 
+  // Delete notes older than 30 days from trash
   const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const oldIds = S.notes.filter(n => n.deleted_at && n.deleted_at < cutoff).map(n => n.id);
   if (oldIds.length > 0) {
@@ -284,6 +330,7 @@ async function loadData() {
     S.notes = S.notes.filter(n => !oldIds.includes(n.id));
   }
 
+  // Load category order from settings or create default
   const settings = settingsRes.data;
   if (settings?.cat_order?.length) {
     S.catOrder = settings.cat_order;
@@ -291,12 +338,13 @@ async function loadData() {
     S.catOrder = S.cats.map(c => c.id);
   }
 
+  // If no categories, seed default data for new user
   if (S.cats.length === 0) {
     await seedDefaultData();
   }
 }
 
-// Create default data for new users
+/** Create default categories, folders, and notes for a new user */
 async function seedDefaultData() {
   const userId = S.user.id;
 
@@ -336,6 +384,7 @@ async function seedDefaultData() {
   await saveCatOrder();
 }
 
+/** Save category order to user settings */
 async function saveCatOrder() {
   await db.from('user_settings').upsert({
     user_id:   S.user.id,
@@ -343,23 +392,33 @@ async function saveCatOrder() {
   });
 }
 
-// View selection
-function setView(v)     { S.view = v; renderAll(); }
-function viewNotes()    {
+// --- View Logic ---
+
+/** Set the current view (null = all notes, folder id = folder view, TRASH = trash) */
+function setView(v) { S.view = v; renderAll(); }
+
+/** Get notes that should be shown in the current view */
+function viewNotes() {
   if (S.view === TRASH) return S.notes.filter(n => n.deleted_at);
   if (S.view)           return S.notes.filter(n => (n.folder_ids || []).includes(S.view) && !n.deleted_at);
   return S.notes.filter(n => !n.deleted_at);
 }
-function viewTitle()    {
+
+/** Get title for the current view */
+function viewTitle() {
   if (S.view === TRASH) return 'Trash';
   if (S.view) { const f = S.folders.find(x => x.id === S.view); return f ? f.name : 'Folder'; }
   return 'All Notes';
 }
 
-// Render functions
-function renderAll()    { renderSidebar(); renderHeader(); renderContent(); }
+// --- Rendering ---
 
+/** Render the entire UI */
+function renderAll() { renderSidebar(); renderHeader(); renderContent(); }
+
+/** Render the left sidebar (folders, categories, etc.) */
 function renderSidebar() {
+  // Highlight active navigation items
   document.getElementById('nav-all').classList.toggle('active', S.view === null);
   document.getElementById('nav-trash').classList.toggle('active', S.view === TRASH);
   document.getElementById('cnt-all').textContent  = S.notes.filter(n => !n.deleted_at).length;
@@ -369,6 +428,7 @@ function renderSidebar() {
   const ct = document.getElementById('cnt-trash');
   ct.textContent = tc; ct.style.display = tc ? '' : 'none';
 
+  // Render folders list
   const fl = document.getElementById('fol-list');
   fl.innerHTML = '';
   S.folders.forEach(f => {
@@ -398,6 +458,7 @@ function renderSidebar() {
   });
 }
 
+/** Render header with view title and note count */
 function renderHeader() {
   const notes  = viewNotes();
   document.getElementById('h-title').textContent = viewTitle();
@@ -409,6 +470,7 @@ function renderHeader() {
   be.disabled = notes.length === 0;
 }
 
+/** Render main content area based on current view */
 function renderContent() {
   const ca      = document.getElementById('content-area');
   const notes   = viewNotes();
@@ -418,6 +480,7 @@ function renderContent() {
   else renderGrouped(ca, notes);
 }
 
+/** Render notes in a flat grid (trash or folder view) */
 function renderFlatGrid(ca, notes, isTrash) {
   if (!notes.length) { ca.innerHTML = emptyHTML(isTrash); return; }
   ca.innerHTML = '';
@@ -427,6 +490,7 @@ function renderFlatGrid(ca, notes, isTrash) {
   ca.appendChild(g);
 }
 
+/** Render notes grouped by category (all notes view) */
 function renderGrouped(ca, allNotes) {
   if (!allNotes.length) { ca.innerHTML = emptyHTML(false); return; }
   ca.innerHTML = '';
@@ -460,6 +524,7 @@ function renderGrouped(ca, allNotes) {
     const grid = sec.querySelector('.cg');
     notes.forEach((n, i) => grid.appendChild(makeCard(n, false, false, i)));
 
+    // Drag & drop reorder for categories
     const grip = sec.querySelector('.cat-grip');
     grip.addEventListener('dragstart', ev => {
       dragSrcCat = cat.id;
@@ -491,6 +556,7 @@ function renderGrouped(ca, allNotes) {
   });
 }
 
+/** Return empty state HTML for a given view */
 function emptyHTML(isTrash) {
   return `<div class="empty-state">
     <div class="empty-icon-wrap">${isTrash ? '🗑️' : '📝'}</div>
@@ -501,11 +567,14 @@ function emptyHTML(isTrash) {
   </div>`;
 }
 
-// Note cards
+// --- Note Cards ---
+
+/** Create a DOM element for a note card */
 function makeCard(note, isTrash, showCat, idx) {
   const card = document.createElement('div');
   card.className = 'note-card';
 
+  // Make note draggable unless in trash
   if (!isTrash) {
     card.setAttribute('draggable', 'true');
     card.addEventListener('dragstart', ev => {
@@ -547,7 +616,7 @@ function makeCard(note, isTrash, showCat, idx) {
   return card;
 }
 
-// Deadline badge
+/** Get badge info for deadline (color, icon, text) */
 function dlBadge(dl) {
   const today  = new Date(); today.setHours(0,0,0,0);
   const target = new Date(dl + 'T00:00:00');
@@ -559,7 +628,9 @@ function dlBadge(dl) {
   return           { text: `${days} days`, icon: '✓',  bg: 'var(--timer-safe-bg)',   color: 'var(--timer-safe-text)'   };
 }
 
-// Notes CRUD
+// --- Note CRUD Operations ---
+
+/** Open modal to create a new note */
 function openNewNoteModal() {
   editNoteId = null;
   document.getElementById('note-modal-title').textContent = 'New Note';
@@ -573,20 +644,29 @@ function openNewNoteModal() {
   setTimeout(() => document.getElementById('n-title').focus(), 120);
 }
 
+/** Open modal to edit an existing note */
 function openEditNoteModal(nid) {
   const n = S.notes.find(x => x.id === nid);
   if (!n) return;
   editNoteId = nid;
+  
+  const saveBtn = document.getElementById('note-save-btn');
+  
   document.getElementById('note-modal-title').textContent = 'Edit Note';
-  document.getElementById('note-save-btn').textContent    = 'Save';
+  saveBtn.textContent = 'Save';
+  
   document.getElementById('n-title').value   = n.title;
   document.getElementById('n-content').value = n.content || '';
   document.getElementById('n-dl').value      = n.deadline || '';
   document.getElementById('dl-clr').style.display = n.deadline ? 'flex' : 'none';
+  
+  saveBtn.disabled = false; 
+
   buildCatSelect(n.category_id);
   openOv('ov-note');
 }
 
+/** Build category dropdown inside note modal */
 function buildCatSelect(selectedId) {
   const sel = document.getElementById('n-cat');
   sel.innerHTML = '';
@@ -598,6 +678,7 @@ function buildCatSelect(selectedId) {
   });
 }
 
+/** Save note (create or update) */
 async function saveNote() {
   const title   = document.getElementById('n-title').value.trim();
   const catId   = document.getElementById('n-cat').value;
@@ -639,6 +720,7 @@ async function saveNote() {
   renderAll();
 }
 
+/** Move note to trash */
 async function trashNote(nid) {
   const { data, error } = await db.from('notes')
     .update({ deleted_at: now() })
@@ -653,6 +735,7 @@ async function trashNote(nid) {
   }
 }
 
+/** Restore note from trash */
 async function restoreNote(nid) {
   const { data, error } = await db.from('notes')
     .update({ deleted_at: null })
@@ -667,6 +750,7 @@ async function restoreNote(nid) {
   }
 }
 
+/** Permanently delete a note */
 async function permDelete(nid) {
   const { error } = await db.from('notes').delete().eq('id', nid);
   if (!error) {
@@ -676,6 +760,7 @@ async function permDelete(nid) {
   }
 }
 
+/** Confirm emptying the trash */
 function confirmEmptyTrash() {
   const count = S.notes.filter(n => n.deleted_at).length;
   if (!count) return;
@@ -691,6 +776,7 @@ function confirmEmptyTrash() {
   );
 }
 
+/** Handle dropping a note onto the trash icon */
 async function onTrashDrop(ev) {
   ev.preventDefault();
   document.getElementById('nav-trash').classList.remove('drop-over');
@@ -698,13 +784,16 @@ async function onTrashDrop(ev) {
   if (nid) await trashNote(nid);
 }
 
-// Folders CRUD
+// --- Folder CRUD Operations ---
+
+/** Toggle folder list visibility */
 function toggleFoldersList() {
   foldersOpen = !foldersOpen;
   document.getElementById('fol-list').classList.toggle('hidden', !foldersOpen);
   document.getElementById('fol-hd').classList.toggle('collapsed', !foldersOpen);
 }
 
+/** Open modal to create a new folder */
 function openNewFolderModal() {
   editFolderId = null; newFolderColor = 'blue';
   document.getElementById('fol-modal-title').textContent = 'New Folder';
@@ -715,6 +804,7 @@ function openNewFolderModal() {
   setTimeout(() => document.getElementById('fol-name').focus(), 120);
 }
 
+/** Open modal to edit an existing folder */
 function openEditFolderModal(fid) {
   const f = S.folders.find(x => x.id === fid);
   if (!f) return;
@@ -726,6 +816,7 @@ function openEditFolderModal(fid) {
   openOv('ov-folder');
 }
 
+/** Build color selection grid for folder modal */
 function buildFolderColorGrid(id, sel, cb) {
   const el = document.getElementById(id); el.innerHTML = '';
   PAL.forEach(p => {
@@ -740,6 +831,7 @@ function buildFolderColorGrid(id, sel, cb) {
   });
 }
 
+/** Save folder (create or update) */
 async function saveFolder() {
   const name = document.getElementById('fol-name').value.trim();
   if (!name) { toast('Enter a name'); return; }
@@ -763,6 +855,7 @@ async function saveFolder() {
   closeOv('ov-folder'); renderAll();
 }
 
+/** Delete a folder and remove it from all notes */
 async function deleteFolder(fid) {
   const notesInFolder = S.notes.filter(n => (n.folder_ids || []).includes(fid));
   for (const note of notesInFolder) {
@@ -777,6 +870,7 @@ async function deleteFolder(fid) {
   renderAll(); toast('Folder deleted');
 }
 
+/** Add a note to a folder */
 async function addToFolder(nid, fid) {
   const i = S.notes.findIndex(n => n.id === nid);
   if (i === -1) return;
@@ -794,6 +888,7 @@ async function addToFolder(nid, fid) {
   }
 }
 
+/** Remove a note from a folder */
 async function removeFromFolder(nid, fid) {
   const i = S.notes.findIndex(n => n.id === nid);
   if (i === -1) return;
@@ -806,7 +901,9 @@ async function removeFromFolder(nid, fid) {
   if (!error && data) { S.notes[i] = data; renderAll(); toast('Removed from folder'); }
 }
 
-// Categories CRUD
+// --- Category CRUD Operations ---
+
+/** Render the categories list in the sidebar */
 function renderCatsList() {
   const el = document.getElementById('cats-list');
   el.innerHTML = '';
@@ -830,6 +927,7 @@ function renderCatsList() {
   document.getElementById('min-cat-note').style.display = S.cats.length <= 1 ? '' : 'none';
 }
 
+/** Enter inline editing mode for a category */
 function startEditCat(cid) {
   const cat = S.cats.find(c => c.id === cid); if (!cat) return;
   const p = pal(cat.color); const item = document.getElementById('ci-' + cid);
@@ -857,6 +955,7 @@ function startEditCat(cid) {
   inp.addEventListener('keydown', e => { if (e.key === 'Enter') saveEditCat(cid); if (e.key === 'Escape') renderCatsList(); });
 }
 
+/** Save edited category */
 async function saveEditCat(cid) {
   const inp   = document.getElementById('eci-' + cid);
   const item  = document.getElementById('ci-' + cid);
@@ -873,6 +972,7 @@ async function saveEditCat(cid) {
   }
 }
 
+/** Add a new category */
 async function addCat() {
   const name = document.getElementById('ncat-name').value.trim();
   if (!name) { toast('Enter a name'); return; }
@@ -892,6 +992,7 @@ async function addCat() {
   }
 }
 
+/** Delete a category (reassign its notes to fallback) */
 async function deleteCat(cid) {
   if (S.cats.length <= 1) { toast('Must have at least one category'); return; }
   const fallback = S.cats.find(c => c.id !== cid);
@@ -910,6 +1011,7 @@ async function deleteCat(cid) {
   renderCatsList(); renderAll(); toast('Category deleted');
 }
 
+/** Build a color picker grid for category editing */
 function buildColorPicker(containerId, selected, onChange) {
   const el = document.getElementById(containerId); if (!el) return;
   el.innerHTML = '';
@@ -925,7 +1027,9 @@ function buildColorPicker(containerId, selected, onChange) {
   });
 }
 
-// Category reorder
+// --- Category Reordering ---
+
+/** Get categories in stored order */
 function getOrderedCats() {
   const ordered = [];
   S.catOrder.forEach(id => { const c = S.cats.find(x => x.id === id); if (c) ordered.push(c); });
@@ -933,6 +1037,7 @@ function getOrderedCats() {
   return ordered;
 }
 
+/** Reorder categories via drag & drop */
 async function reorderCat(srcId, targetId, before) {
   const order = [...S.catOrder];
   const si = order.indexOf(srcId), ti = order.indexOf(targetId);
@@ -945,7 +1050,9 @@ async function reorderCat(srcId, targetId, before) {
   await saveCatOrder();
 }
 
-// Dropdown menus
+// --- Dropdown Menus ---
+
+/** Position a dropdown near the click event */
 function posDD(dd, ev) {
   closeDD();
   const x = Math.min(ev.clientX, window.innerWidth  - 190);
@@ -954,6 +1061,7 @@ function posDD(dd, ev) {
 }
 function closeDD() { document.querySelectorAll('.dd.open').forEach(d => d.classList.remove('open')); }
 
+/** Open the note dropdown menu */
 function openNoteDD(ev, nid) {
   ev.stopPropagation();
   const note = S.notes.find(n => n.id === nid);
@@ -962,12 +1070,14 @@ function openNoteDD(ev, nid) {
   document.getElementById('ddn-edit').onclick  = () => { closeDD(); openEditNoteModal(nid); };
   document.getElementById('ddn-trash').onclick = () => { closeDD(); trashNote(nid); };
 
+  // Build list of folders the note can be added to
   const avail = S.folders.filter(f => !(note?.folder_ids || []).includes(f.id));
   document.getElementById('ddn-add-sub').style.display = avail.length ? '' : 'none';
   const addList = document.getElementById('ddn-add-list');
   addList.innerHTML = '';
   avail.forEach(f => { const b = document.createElement('button'); b.className = 'dd-item'; b.textContent = f.name; b.onclick = () => { closeDD(); addToFolder(nid, f.id); }; addList.appendChild(b); });
 
+  // Build list of folders the note can be removed from
   const inF = S.folders.filter(f => (note?.folder_ids || []).includes(f.id));
   document.getElementById('ddn-rem-sub').style.display = inF.length ? '' : 'none';
   const remList = document.getElementById('ddn-rem-list');
@@ -977,6 +1087,7 @@ function openNoteDD(ev, nid) {
   dd.classList.add('open');
 }
 
+/** Open the trash note dropdown menu */
 function openTrashDD(ev, nid) {
   ev.stopPropagation();
   const dd = document.getElementById('dd-trash-note');
@@ -989,6 +1100,7 @@ function openTrashDD(ev, nid) {
   dd.classList.add('open');
 }
 
+/** Open the folder dropdown menu */
 function openFolderDD(ev, fid) {
   ev.stopPropagation();
   const dd = document.getElementById('dd-folder');
@@ -1002,7 +1114,9 @@ function openFolderDD(ev, fid) {
   dd.classList.add('open');
 }
 
-// Confirm dialog
+// --- Confirmation Dialog ---
+
+/** Show a confirmation modal */
 function showConfirm(title, message, onConfirm) {
   document.getElementById('cfm-title').textContent = title;
   document.getElementById('cfm-msg').textContent   = message;
@@ -1010,12 +1124,23 @@ function showConfirm(title, message, onConfirm) {
   openOv('ov-confirm');
 }
 
-// Modal helpers
+// --- Modal Helpers ---
+
 function openOv(id)          { document.getElementById(id).classList.add('open');    }
 function closeOv(id)         { document.getElementById(id).classList.remove('open'); }
-function bgClose(ev, id)     { if (ev.target === ev.currentTarget) closeOv(id);      }
+function bgClose(ev, id) {
+  // Don't close if user is selecting text
+  if (window.getSelection().toString().length > 0) {
+    return;
+  }
+  // Only close if click is on the background overlay
+  if (ev.target === ev.currentTarget) {
+    closeOv(id);
+  }
+}
 
-// Toast notification
+// --- Toast Notification ---
+
 function toast(message) {
   const t = document.getElementById('toast');
   t.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>${message}`;
@@ -1024,27 +1149,32 @@ function toast(message) {
   t._timer = setTimeout(() => t.classList.remove('show'), 2400);
 }
 
-// Global event listeners
+// --- Global Event Listeners ---
+
+// Close dropdowns when clicking outside
 document.addEventListener('click', ev => {
   if (!ev.target.closest('.dd') && !ev.target.closest('.nc-menu-btn') && !ev.target.closest('.folder-more'))
     closeDD();
 });
 
+// Escape key closes modals and dropdowns
 document.addEventListener('keydown', ev => {
   if (ev.key === 'Escape') {
     document.querySelectorAll('.overlay.open').forEach(o => o.classList.remove('open'));
     closeDD();
   }
+  // Ctrl+N to create new note
   if ((ev.metaKey || ev.ctrlKey) && ev.key === 'n' && S.user && S.view !== TRASH) {
     ev.preventDefault();
     openNewNoteModal();
   }
 });
 
+// Enter key triggers auth and reset actions
 document.getElementById('a-pw').addEventListener('keydown',    ev => { if (ev.key === 'Enter') doAuth(); });
 document.getElementById('a-email').addEventListener('keydown', ev => { if (ev.key === 'Enter') document.getElementById('a-pw').focus(); });
 document.getElementById('reset-email').addEventListener('keydown', ev => { if (ev.key === 'Enter') sendResetEmail(); });
 document.getElementById('new-pw').addEventListener('keydown',     ev => { if (ev.key === 'Enter') updatePassword(); });
 
-// Start
+// Start the application
 init();
